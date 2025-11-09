@@ -1,12 +1,12 @@
+import { NavigationContainer } from "@react-navigation/native";
 import "./global.css"
 import { Text, View } from "react-native";
+import { navigationRef } from "./navigation/Navigation";
  
 export default function Index() {
   return (
-    <View className="flex-1 items-center justify-center bg-white">
-      <Text className="text-xl font-bold text-blue-500">
-        Welcome to Nativewin!
-      </Text>
-    </View>
+  <View>
+    <Text>Hello</Text>
+  </View>
   );
 }
