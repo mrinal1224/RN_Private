@@ -46,77 +46,134 @@ export default function SignupScreen() {
     <KeyboardAvoidingView 
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      className="flex-1 bg-emerald-50"
     >
+      {/* Decorative blobs */}
+      <View className="absolute -top-20 -right-16 h-56 w-56 rounded-full bg-emerald-200/60" />
+      <View className="absolute -bottom-28 -left-16 h-72 w-72 rounded-full bg-lime-200/50" />
+
       <ScrollView 
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
+        className="px-6"
       >
-        <View style={styles.content}>
-          <Text style={styles.title}>Sign Up</Text>
-          <Text style={styles.subtitle}>Create your account to get started</Text>
-
-          <View style={styles.form}>
-            <View style={styles.inputContainer}>
-              <Text style={styles.label}>Name</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter your name"
-                placeholderTextColor="#999"
-                value={name}
-                onChangeText={setName}
-                autoCapitalize="words"
-                autoComplete="name"
-              />
+        <View style={styles.content} className="justify-center">
+          {/* Header / Logo */}
+          <View className="items-center mb-6 mt-6">
+            <View className="h-16 w-16 rounded-2xl bg-emerald-600 items-center justify-center shadow">
+              <Text className="text-white text-3xl">🥬</Text>
             </View>
+            <Text style={styles.title} className="mt-4 text-3xl font-extrabold text-emerald-800">
+              Sign Up
+            </Text>
+            <Text style={styles.subtitle} className="text-base text-emerald-700/70 mt-1">
+              Create your account to get started
+            </Text>
+          </View>
 
-            <View style={styles.inputContainer}>
-              <Text style={styles.label}>Email</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter your email"
-                placeholderTextColor="#999"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoComplete="email"
-              />
-            </View>
+          {/* Card */}
+          <View className="bg-white/90 rounded-3xl p-5 shadow-md border border-emerald-100">
+            <Text className="text-lg font-semibold text-emerald-900 mb-4">
+              Join the fresh side 🍏
+            </Text>
 
-            <View style={styles.inputContainer}>
-              <Text style={styles.label}>Password</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter your password"
-                placeholderTextColor="#999"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-                autoCapitalize="none"
-                autoComplete="password-new"
-              />
-            </View>
+            <View style={styles.form} className="w-full">
+              <View style={styles.inputContainer} className="mb-4">
+                <Text style={styles.label} className="text-emerald-800 mb-2 font-medium">
+                  Name
+                </Text>
+                <TextInput
+                  style={styles.input}
+                  className="bg-white border border-emerald-200 rounded-2xl px-4 py-4 text-emerald-900"
+                  placeholder="Your full name"
+                  placeholderTextColor="#6b7280"
+                  value={name}
+                  onChangeText={setName}
+                  autoCapitalize="words"
+                  autoComplete="name"
+                />
+              </View>
 
-            <TouchableOpacity 
-              style={[styles.signupButton, loading && styles.signupButtonDisabled]} 
-              onPress={handleSignup}
-              disabled={loading}
-            >
-              {loading ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.signupButtonText}>Sign Up</Text>
-              )}
-            </TouchableOpacity>
+              <View style={styles.inputContainer} className="mb-4">
+                <Text style={styles.label} className="text-emerald-800 mb-2 font-medium">
+                  Email
+                </Text>
+                <TextInput
+                  style={styles.input}
+                  className="bg-white border border-emerald-200 rounded-2xl px-4 py-4 text-emerald-900"
+                  placeholder="you@example.com"
+                  placeholderTextColor="#6b7280"
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoComplete="email"
+                />
+              </View>
 
-            <TouchableOpacity 
-              style={styles.linkButton}
-              onPress={() => router.push('/login' as any)}
-            >
-              <Text style={styles.linkText}>
-                Already have an account? <Text style={styles.linkTextBold}>Login</Text>
+              <View style={styles.inputContainer} className="mb-2">
+                <Text style={styles.label} className="text-emerald-800 mb-2 font-medium">
+                  Password
+                </Text>
+                <TextInput
+                  style={styles.input}
+                  className="bg-white border border-emerald-200 rounded-2xl px-4 py-4 text-emerald-900"
+                  placeholder="Create a strong password"
+                  placeholderTextColor="#6b7280"
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry
+                  autoCapitalize="none"
+                  autoComplete="password-new"
+                />
+              </View>
+
+              <Text className="text-[11px] text-emerald-700/70 mt-1">
+                By continuing, you agree to our Terms & Privacy Policy.
               </Text>
-            </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={[styles.signupButton, loading && styles.signupButtonDisabled]} 
+                className={`rounded-2xl py-4 items-center mt-4 ${loading ? 'bg-emerald-500/70' : 'bg-emerald-600'} shadow`}
+                onPress={handleSignup}
+                disabled={loading}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.signupButtonText} className="text-white text-lg font-semibold">
+                    Create Account
+                  </Text>
+                )}
+              </TouchableOpacity>
+
+              <View className="flex-row items-center my-4">
+                <View className="flex-1 h-[1px] bg-emerald-100" />
+                <Text className="mx-3 text-emerald-700/70">or</Text>
+                <View className="flex-1 h-[1px] bg-emerald-100" />
+              </View>
+
+              <TouchableOpacity className="rounded-2xl py-3 border border-emerald-200 bg-white items-center">
+                <Text className="text-emerald-800 font-semibold">Sign up with Google</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.linkButton}
+                className="mt-6 items-center"
+                onPress={() => router.push('/login' as any)}
+              >
+                <Text style={styles.linkText} className="text-emerald-700">
+                  Already have an account? <Text style={styles.linkTextBold} className="text-emerald-700 font-extrabold">Login</Text>
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Footer badges */}
+          <View className="items-center mt-5 mb-8">
+            <Text className="text-emerald-700/70 text-xs">
+              🧺 10,000+ items • 🥒 Daily deals • 🚚 30-min delivery
+            </Text>
           </View>
         </View>
       </ScrollView>
@@ -125,6 +182,7 @@ export default function SignupScreen() {
 }
 
 const styles = StyleSheet.create({
+  // original styles kept for compatibility; Tailwind classes do the visual heavy lifting
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
@@ -205,4 +263,3 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
-
