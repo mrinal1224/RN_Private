@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -8,460 +8,358 @@ import {
   TextInput,
   Dimensions,
   Modal,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { FontAwesome, MaterialIcons } from "@expo/vector-icons";
+import { productsAPI } from "../utils/api";
 
 const { width } = Dimensions.get("window");
 
-// Sample data
-const categories = [
-  { id: 1, name: "Fruits", icon: "apple" },
-  { id: 2, name: "Vegetables", icon: "leaf" },
-  { id: 3, name: "Dairy", icon: "glass" },
-  { id: 4, name: "Beverages", icon: "coffee" },
-  { id: 5, name: "Snacks", icon: "cookie" },
-  { id: 6, name: "Meat", icon: "cutlery" },
-  { id: 7, name: "Bakery", icon: "birthday-cake" },
-  { id: 8, name: "Frozen", icon: "snowflake-o" },
-];
+type Category = {
+  id: string;
+  name: string;
+  icon: string;
+};
 
-const categoryProducts = [
-  // Fruits
-  {
-    id: "fruits-1",
-    categoryId: 1,
-    name: "Fresh Bananas",
-    price: "₹49",
-    image: "🍌",
-  },
-  {
-    id: "fruits-2",
-    categoryId: 1,
-    name: "Seasonal Mangoes",
-    price: "₹149",
-    image: "🥭",
-  },
-  {
-    id: "fruits-3",
-    categoryId: 1,
-    name: "Green Apples",
-    price: "₹199",
-    image: "🍏",
-  },
-  // Vegetables
-  {
-    id: "veg-1",
-    categoryId: 2,
-    name: "Organic Tomatoes",
-    price: "₹39",
-    image: "🍅",
-  },
-  {
-    id: "veg-2",
-    categoryId: 2,
-    name: "Carrots 500g",
-    price: "₹29",
-    image: "🥕",
-  },
-  {
-    id: "veg-3",
-    categoryId: 2,
-    name: "Spinach Bunch",
-    price: "₹25",
-    image: "🥬",
-  },
-  // Dairy
-  {
-    id: "dairy-1",
-    categoryId: 3,
-    name: "Fresh Milk 1L",
-    price: "₹58",
-    image: "🥛",
-  },
-  {
-    id: "dairy-2",
-    categoryId: 3,
-    name: "Greek Yogurt",
-    price: "₹89",
-    image: "🍶",
-  },
-  {
-    id: "dairy-3",
-    categoryId: 3,
-    name: "Salted Butter",
-    price: "₹120",
-    image: "🧈",
-  },
-  // Beverages
-  {
-    id: "bev-1",
-    categoryId: 4,
-    name: "Cold Coffee",
-    price: "₹79",
-    image: "🥤",
-  },
-  {
-    id: "bev-2",
-    categoryId: 4,
-    name: "Fresh Lemonade",
-    price: "₹59",
-    image: "🍋",
-  },
-  {
-    id: "bev-3",
-    categoryId: 4,
-    name: "Coconut Water",
-    price: "₹45",
-    image: "🥥",
-  },
-  // Snacks
-  {
-    id: "snacks-1",
-    categoryId: 5,
-    name: "Masala Chips",
-    price: "₹30",
-    image: "🍟",
-  },
-  {
-    id: "snacks-2",
-    categoryId: 5,
-    name: "Salted Peanuts",
-    price: "₹60",
-    image: "🥜",
-  },
-  {
-    id: "snacks-3",
-    categoryId: 5,
-    name: "Dark Chocolate",
-    price: "₹110",
-    image: "🍫",
-  },
-  // Meat
-  {
-    id: "meat-1",
-    categoryId: 6,
-    name: "Chicken Breast 500g",
-    price: "₹210",
-    image: "🍗",
-  },
-  {
-    id: "meat-2",
-    categoryId: 6,
-    name: "Fresh Salmon",
-    price: "₹450",
-    image: "🐟",
-  },
-  {
-    id: "meat-3",
-    categoryId: 6,
-    name: "Mutton Curry Cut",
-    price: "₹520",
-    image: "🥩",
-  },
-  // Bakery
-  {
-    id: "bakery-1",
-    categoryId: 7,
-    name: "Whole Wheat Bread",
-    price: "₹45",
-    image: "🍞",
-  },
-  {
-    id: "bakery-2",
-    categoryId: 7,
-    name: "Blueberry Muffins",
-    price: "₹150",
-    image: "🧁",
-  },
-  {
-    id: "bakery-3",
-    categoryId: 7,
-    name: "Garlic Breadsticks",
-    price: "₹95",
-    image: "🥖",
-  },
-  // Frozen
-  {
-    id: "frozen-1",
-    categoryId: 8,
-    name: "Frozen Peas 500g",
-    price: "₹80",
-    image: "🟢",
-  },
-  {
-    id: "frozen-2",
-    categoryId: 8,
-    name: "Ice Cream Tub",
-    price: "₹199",
-    image: "🍨",
-  },
-  {
-    id: "frozen-3",
-    categoryId: 8,
-    name: "Veggie Nuggets",
-    price: "₹150",
-    image: "🍢",
-  },
-];
+type Product = {
+  id: string;
+  name: string;
+  description?: string;
+  price: number;
+  originalPrice?: number;
+  discountLabel?: string;
+  image?: string;
+  categoryId: string;
+  tags?: string[];
+};
 
-const featuredProducts = [
-  {
-    id: 1,
-    name: "Fresh Bananas",
-    price: "₹49",
-    originalPrice: "₹69",
-    discount: "29% OFF",
-    image: "🍌",
-  },
-  {
-    id: 2,
-    name: "Organic Tomatoes",
-    price: "₹39",
-    originalPrice: "₹59",
-    discount: "34% OFF",
-    image: "🍅",
-  },
-  {
-    id: 3,
-    name: "Fresh Milk 1L",
-    price: "₹58",
-    originalPrice: "₹68",
-    discount: "15% OFF",
-    image: "🥛",
-  },
-  {
-    id: 4,
-    name: "Bread Loaf",
-    price: "₹35",
-    originalPrice: "₹45",
-    discount: "22% OFF",
-    image: "🍞",
-  },
-];
+const formatCurrency = (value?: number) => {
+  if (typeof value !== "number" || Number.isNaN(value)) {
+    return "";
+  }
+  return `₹${Math.round(value)}`;
+};
 
-const bestSellers = [
-  {
-    id: 5,
-    name: "Red Onions 1kg",
-    price: "₹45",
-    image: "🧅",
-  },
-  {
-    id: 6,
-    name: "Potatoes 1kg",
-    price: "₹35",
-    image: "🥔",
-  },
-  {
-    id: 7,
-    name: "Carrots 500g",
-    price: "₹25",
-    image: "🥕",
-  },
-  {
-    id: 8,
-    name: "Capsicum 500g",
-    price: "₹55",
-    image: "🫑",
-  },
-];
+const getProductEmoji = (image?: string) => {
+  if (!image || image.trim().length === 0) {
+    return "🛒";
+  }
+  return image;
+};
 
 export default function HomeScreen() {
-  const [selectedCategoryId, setSelectedCategoryId] = useState(categories[0]?.id ?? null);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
+  const [bestSellers, setBestSellers] = useState<Product[]>([]);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [isSidebarVisible, setSidebarVisible] = useState(false);
+  const [loadingProducts, setLoadingProducts] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadProducts = async () => {
+      try {
+        setLoadingProducts(true);
+        setError(null);
+
+        const response = await productsAPI.getAll();
+
+        if (!response?.success) {
+          throw new Error("Unable to load products right now.");
+        }
+
+        const data = response.data ?? {};
+        const categoriesData: Category[] = data.categories ?? [];
+        const productsData: Product[] = data.products ?? [];
+        const featuredData: Product[] = data.featured ?? [];
+        const bestSellerData: Product[] = data.bestSellers ?? [];
+
+        if (!isMounted) return;
+
+        setCategories(categoriesData);
+        setAllProducts(productsData);
+        setFeaturedProducts(
+          featuredData.length > 0 ? featuredData : productsData.slice(0, Math.min(8, productsData.length))
+        );
+        setBestSellers(
+          bestSellerData.length > 0 ? bestSellerData : productsData.slice(0, Math.min(8, productsData.length))
+        );
+
+        if (categoriesData.length > 0) {
+          setSelectedCategoryId(categoriesData[0].id);
+        } else {
+          setSelectedCategoryId(null);
+        }
+      } catch (err: any) {
+        if (!isMounted) return;
+        setError(err?.message ?? "Unable to load products right now.");
+      } finally {
+        if (isMounted) {
+          setLoadingProducts(false);
+        }
+      }
+    };
+
+    loadProducts();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const filteredProducts = useMemo(() => {
     if (!selectedCategoryId) {
-      return categoryProducts;
+      return allProducts;
     }
-    return categoryProducts.filter((product) => product.categoryId === selectedCategoryId);
-  }, [selectedCategoryId]);
+    return allProducts.filter((product) => product.categoryId === selectedCategoryId);
+  }, [allProducts, selectedCategoryId]);
 
-  const handleCategoryPress = (categoryId: number) => {
+  const dailyEssentials = useMemo(() => {
+    if (allProducts.length === 0) {
+      return [];
+    }
+    return allProducts.slice(0, Math.min(10, allProducts.length));
+  }, [allProducts]);
+
+  const handleCategoryPress = (categoryId: string) => {
     setSelectedCategoryId(categoryId);
     setSidebarVisible(true);
+  };
+
+  const handleChipPress = (categoryId: string) => {
+    setSelectedCategoryId(categoryId);
   };
 
   return (
     <>
       <SafeAreaView style={styles.container} edges={["top"]}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.locationContainer}>
-          <MaterialIcons name="location-on" size={20} color="#00A859" />
-          <View style={styles.locationTextContainer}>
-            <Text style={styles.deliveryText}>Delivery in</Text>
-            <Text style={styles.locationText}>Mumbai, 400001</Text>
+        {/* Header */}
+        <View style={styles.header}>
+          <View style={styles.locationContainer}>
+            <MaterialIcons name="location-on" size={20} color="#00A859" />
+            <View style={styles.locationTextContainer}>
+              <Text style={styles.deliveryText}>Delivery in</Text>
+              <Text style={styles.locationText}>Mumbai, 400001</Text>
+            </View>
+            <MaterialIcons name="keyboard-arrow-down" size={20} color="#333" />
           </View>
-          <MaterialIcons name="keyboard-arrow-down" size={20} color="#333" />
+          <TouchableOpacity style={styles.cartButton}>
+            <FontAwesome name="shopping-cart" size={22} color="#333" />
+            <View style={styles.cartBadge}>
+              <Text style={styles.cartBadgeText}>0</Text>
+            </View>
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity style={styles.cartButton}>
-          <FontAwesome name="shopping-cart" size={22} color="#333" />
-          <View style={styles.cartBadge}>
-            <Text style={styles.cartBadgeText}>0</Text>
-          </View>
-        </TouchableOpacity>
-      </View>
 
-      {/* Search Bar */}
-      <View style={styles.searchContainer}>
-        <FontAwesome name="search" size={18} color="#999" style={styles.searchIcon} />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search for products..."
-          placeholderTextColor="#999"
-        />
-      </View>
+        {/* Search Bar */}
+        <View style={styles.searchContainer}>
+          <FontAwesome name="search" size={18} color="#999" style={styles.searchIcon} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search for products..."
+            placeholderTextColor="#999"
+          />
+        </View>
 
-      {/* Quick Delivery Banner */}
-      <View style={styles.deliveryBanner}>
-        <View style={styles.deliveryBannerContent}>
-          <MaterialIcons name="local-shipping" size={24} color="#00A859" />
-          <View style={styles.deliveryBannerText}>
-            <Text style={styles.deliveryBannerTitle}>10 minutes delivery</Text>
-            <Text style={styles.deliveryBannerSubtitle}>Order now, get it fast!</Text>
+        {/* Quick Delivery Banner */}
+        <View style={styles.deliveryBanner}>
+          <View style={styles.deliveryBannerContent}>
+            <MaterialIcons name="local-shipping" size={24} color="#00A859" />
+            <View style={styles.deliveryBannerText}>
+              <Text style={styles.deliveryBannerTitle}>10 minutes delivery</Text>
+              <Text style={styles.deliveryBannerSubtitle}>Order now, get it fast!</Text>
+            </View>
           </View>
         </View>
-      </View>
 
-      <ScrollView
-        style={styles.scrollView}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        {/* Categories */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Shop by Category</Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.categoriesContainer}
-          >
-            {categories.map((category) => (
-              <TouchableOpacity
-                key={category.id}
-                style={[
-                  styles.categoryCard,
-                  selectedCategoryId === category.id && styles.categoryCardActive,
-                ]}
-                onPress={() => handleCategoryPress(category.id)}
+        {error && !loadingProducts && (
+          <View style={styles.errorAlert}>
+            <MaterialIcons name="error-outline" size={18} color="#FF3B30" style={styles.errorIcon} />
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        )}
+
+        <ScrollView
+          style={styles.scrollView}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        >
+          {/* Categories */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Shop by Category</Text>
+            {loadingProducts ? (
+              <View style={styles.categoryLoadingContainer}>
+                <ActivityIndicator size="small" color="#00A859" />
+              </View>
+            ) : categories.length === 0 ? (
+              <Text style={styles.inlineEmptyText}>No categories available right now.</Text>
+            ) : (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.categoriesContainer}
               >
-                <View style={styles.categoryIcon}>
-                  <FontAwesome name={category.icon as any} size={24} color="#00A859" />
-                </View>
-                <Text style={styles.categoryName}>{category.name}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-
-        {/* Featured Deals */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Featured Deals</Text>
-            <TouchableOpacity>
-              <Text style={styles.seeAllText}>See All</Text>
-            </TouchableOpacity>
-          </View>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.productsContainer}
-          >
-            {featuredProducts.map((product) => (
-              <TouchableOpacity key={product.id} style={styles.productCard}>
-                <View style={styles.productImageContainer}>
-                  <Text style={styles.productEmoji}>{product.image}</Text>
-                  <View style={styles.discountBadge}>
-                    <Text style={styles.discountText}>{product.discount}</Text>
-                  </View>
-                </View>
-                <View style={styles.productInfo}>
-                  <Text style={styles.productName} numberOfLines={2}>
-                    {product.name}
-                  </Text>
-                  <View style={styles.priceContainer}>
-                    <Text style={styles.productPrice}>{product.price}</Text>
-                    <Text style={styles.originalPrice}>{product.originalPrice}</Text>
-                  </View>
-                  <TouchableOpacity style={styles.addButton}>
-                    <Text style={styles.addButtonText}>Add</Text>
+                {categories.map((category) => (
+                  <TouchableOpacity
+                    key={category.id}
+                    style={[
+                      styles.categoryCard,
+                      selectedCategoryId === category.id && styles.categoryCardActive,
+                    ]}
+                    onPress={() => handleCategoryPress(category.id)}
+                  >
+                    <View style={styles.categoryIcon}>
+                      <FontAwesome name={category.icon as any} size={24} color="#00A859" />
+                    </View>
+                    <Text style={styles.categoryName}>{category.name}</Text>
                   </TouchableOpacity>
-                </View>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
+                ))}
+              </ScrollView>
+            )}
+          </View>
 
-        {/* Best Sellers */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Best Sellers</Text>
-            <TouchableOpacity>
-              <Text style={styles.seeAllText}>See All</Text>
-            </TouchableOpacity>
-          </View>
-          <View style={styles.gridContainer}>
-            {bestSellers.map((product) => (
-              <TouchableOpacity key={product.id} style={styles.gridProductCard}>
-                <View style={styles.gridProductImageContainer}>
-                  <Text style={styles.productEmoji}>{product.image}</Text>
-                </View>
-                <View style={styles.gridProductInfo}>
-                  <Text style={styles.gridProductName} numberOfLines={2}>
-                    {product.name}
-                  </Text>
-                  <View style={styles.gridPriceContainer}>
-                    <Text style={styles.gridProductPrice}>{product.price}</Text>
-                    <TouchableOpacity style={styles.gridAddButton}>
-                      <FontAwesome name="plus" size={14} color="#fff" />
-                    </TouchableOpacity>
-                  </View>
-                </View>
+          {/* Featured Deals */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Featured Deals</Text>
+              <TouchableOpacity>
+                <Text style={styles.seeAllText}>See All</Text>
               </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
-        {/* Daily Essentials */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Daily Essentials</Text>
-            <TouchableOpacity>
-              <Text style={styles.seeAllText}>See All</Text>
-            </TouchableOpacity>
-          </View>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.productsContainer}
-          >
-            {featuredProducts.map((product) => (
-              <TouchableOpacity key={`daily-${product.id}`} style={styles.productCard}>
-                <View style={styles.productImageContainer}>
-                  <Text style={styles.productEmoji}>{product.image}</Text>
-                  <View style={styles.discountBadge}>
-                    <Text style={styles.discountText}>{product.discount}</Text>
-                  </View>
-                </View>
-                <View style={styles.productInfo}>
-                  <Text style={styles.productName} numberOfLines={2}>
-                    {product.name}
-                  </Text>
-                  <View style={styles.priceContainer}>
-                    <Text style={styles.productPrice}>{product.price}</Text>
-                    <Text style={styles.originalPrice}>{product.originalPrice}</Text>
-                  </View>
-                  <TouchableOpacity style={styles.addButton}>
-                    <Text style={styles.addButtonText}>Add</Text>
+            </View>
+            {loadingProducts ? (
+              <View style={styles.horizontalLoader}>
+                <ActivityIndicator size="small" color="#00A859" />
+              </View>
+            ) : featuredProducts.length === 0 ? (
+              <Text style={styles.inlineEmptyText}>No featured products yet.</Text>
+            ) : (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.productsContainer}
+              >
+                {featuredProducts.map((product) => (
+                  <TouchableOpacity key={product.id} style={styles.productCard}>
+                    <View style={styles.productImageContainer}>
+                      <Text style={styles.productEmoji}>{getProductEmoji(product.image)}</Text>
+                      {product.discountLabel ? (
+                        <View style={styles.discountBadge}>
+                          <Text style={styles.discountText}>{product.discountLabel}</Text>
+                        </View>
+                      ) : null}
+                    </View>
+                    <View style={styles.productInfo}>
+                      <Text style={styles.productName} numberOfLines={2}>
+                        {product.name}
+                      </Text>
+                      <View style={styles.priceContainer}>
+                        <Text style={styles.productPrice}>{formatCurrency(product.price)}</Text>
+                        {product.originalPrice ? (
+                          <Text style={styles.originalPrice}>{formatCurrency(product.originalPrice)}</Text>
+                        ) : null}
+                      </View>
+                      <TouchableOpacity style={styles.addButton}>
+                        <Text style={styles.addButtonText}>Add</Text>
+                      </TouchableOpacity>
+                    </View>
                   </TouchableOpacity>
-                </View>
+                ))}
+              </ScrollView>
+            )}
+          </View>
+
+          {/* Best Sellers */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Best Sellers</Text>
+              <TouchableOpacity>
+                <Text style={styles.seeAllText}>See All</Text>
               </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-      </ScrollView>
+            </View>
+            {loadingProducts ? (
+              <View style={styles.horizontalLoader}>
+                <ActivityIndicator size="small" color="#00A859" />
+              </View>
+            ) : bestSellers.length === 0 ? (
+              <Text style={styles.inlineEmptyText}>No best sellers yet.</Text>
+            ) : (
+              <View style={styles.gridContainer}>
+                {bestSellers.map((product) => (
+                  <TouchableOpacity key={product.id} style={styles.gridProductCard}>
+                    <View style={styles.gridProductImageContainer}>
+                      <Text style={styles.productEmoji}>{getProductEmoji(product.image)}</Text>
+                    </View>
+                    <View style={styles.gridProductInfo}>
+                      <Text style={styles.gridProductName} numberOfLines={2}>
+                        {product.name}
+                      </Text>
+                      <View style={styles.gridPriceContainer}>
+                        <Text style={styles.gridProductPrice}>{formatCurrency(product.price)}</Text>
+                        <TouchableOpacity style={styles.gridAddButton}>
+                          <FontAwesome name="plus" size={14} color="#fff" />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </View>
+
+          {/* Daily Essentials */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Daily Essentials</Text>
+              <TouchableOpacity>
+                <Text style={styles.seeAllText}>See All</Text>
+              </TouchableOpacity>
+            </View>
+            {loadingProducts ? (
+              <View style={styles.horizontalLoader}>
+                <ActivityIndicator size="small" color="#00A859" />
+              </View>
+            ) : dailyEssentials.length === 0 ? (
+              <Text style={styles.inlineEmptyText}>No daily essentials yet.</Text>
+            ) : (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.productsContainer}
+              >
+                {dailyEssentials.map((product) => (
+                  <TouchableOpacity key={`daily-${product.id}`} style={styles.productCard}>
+                    <View style={styles.productImageContainer}>
+                      <Text style={styles.productEmoji}>{getProductEmoji(product.image)}</Text>
+                      {product.discountLabel ? (
+                        <View style={styles.discountBadge}>
+                          <Text style={styles.discountText}>{product.discountLabel}</Text>
+                        </View>
+                      ) : null}
+                    </View>
+                    <View style={styles.productInfo}>
+                      <Text style={styles.productName} numberOfLines={2}>
+                        {product.name}
+                      </Text>
+                      <View style={styles.priceContainer}>
+                        <Text style={styles.productPrice}>{formatCurrency(product.price)}</Text>
+                        {product.originalPrice ? (
+                          <Text style={styles.originalPrice}>{formatCurrency(product.originalPrice)}</Text>
+                        ) : null}
+                      </View>
+                      <TouchableOpacity style={styles.addButton}>
+                        <Text style={styles.addButtonText}>Add</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            )}
+          </View>
+        </ScrollView>
       </SafeAreaView>
 
       <Modal visible={isSidebarVisible} animationType="slide" transparent>
@@ -469,62 +367,87 @@ export default function HomeScreen() {
           <SafeAreaView style={styles.fullscreenContainer}>
             <View style={styles.fullscreenHeader}>
               <Text style={styles.fullscreenTitle}>Browse Categories</Text>
-              <TouchableOpacity style={styles.fullscreenCloseButton} onPress={() => setSidebarVisible(false)}>
+              <TouchableOpacity
+                style={styles.fullscreenCloseButton}
+                onPress={() => setSidebarVisible(false)}
+              >
                 <FontAwesome name="close" size={22} color="#333" />
               </TouchableOpacity>
             </View>
 
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.chipsContainer}
-            >
-              {categories.map((category) => {
-                const isActive = selectedCategoryId === category.id;
-                return (
-                  <TouchableOpacity
-                    key={`chip-${category.id}`}
-                    onPress={() => setSelectedCategoryId(category.id)}
-                    style={[styles.categoryChip, isActive && styles.categoryChipActive]}
-                  >
-                    <View style={[styles.categoryChipIcon, isActive && styles.categoryChipIconActive]}>
-                      <FontAwesome
-                        name={category.icon as any}
-                        size={18}
-                        color={isActive ? "#FFFFFF" : "#00A859"}
-                      />
-                    </View>
-                    <Text style={[styles.categoryChipText, isActive && styles.categoryChipTextActive]}>
-                      {category.name}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-
-            <ScrollView contentContainerStyle={styles.fullGridContainer} showsVerticalScrollIndicator={false}>
-              {filteredProducts.map((product) => (
-                <View key={product.id} style={styles.fullGridCard}>
-                  <View style={styles.fullGridImageContainer}>
-                    <Text style={styles.fullGridEmoji}>{product.image}</Text>
-                  </View>
-                  <View style={styles.fullGridInfo}>
-                    <Text style={styles.fullGridName} numberOfLines={2}>{product.name}</Text>
-                    <View style={styles.fullGridFooter}>
-                      <Text style={styles.fullGridPrice}>{product.price}</Text>
-                      <TouchableOpacity style={styles.fullGridAddButton}>
-                        <Text style={styles.fullGridAddText}>Add</Text>
+            {loadingProducts ? (
+              <View style={styles.modalLoadingContainer}>
+                <ActivityIndicator size="large" color="#00A859" />
+              </View>
+            ) : categories.length === 0 ? (
+              <View style={styles.modalLoadingContainer}>
+                <Text style={styles.emptyStateText}>No categories available.</Text>
+              </View>
+            ) : (
+              <>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.chipsContainer}
+                >
+                  {categories.map((category) => {
+                    const isActive = selectedCategoryId === category.id;
+                    return (
+                      <TouchableOpacity
+                        key={`chip-${category.id}`}
+                        onPress={() => handleChipPress(category.id)}
+                        style={[styles.categoryChip, isActive && styles.categoryChipActive]}
+                      >
+                        <View style={[styles.categoryChipIcon, isActive && styles.categoryChipIconActive]}>
+                          <FontAwesome
+                            name={category.icon as any}
+                            size={18}
+                            color={isActive ? "#FFFFFF" : "#00A859"}
+                          />
+                        </View>
+                        <Text style={[styles.categoryChipText, isActive && styles.categoryChipTextActive]}>
+                          {category.name}
+                        </Text>
                       </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+
+                <ScrollView contentContainerStyle={styles.fullGridContainer} showsVerticalScrollIndicator={false}>
+                  {filteredProducts.length > 0 ? (
+                    filteredProducts.map((product) => (
+                      <View key={product.id} style={styles.fullGridCard}>
+                        <View style={styles.fullGridImageContainer}>
+                          <Text style={styles.fullGridEmoji}>{getProductEmoji(product.image)}</Text>
+                        </View>
+                        <View style={styles.fullGridInfo}>
+                          <Text style={styles.fullGridName} numberOfLines={2}>
+                            {product.name}
+                          </Text>
+                          <View style={styles.fullGridFooter}>
+                            <View>
+                              <Text style={styles.fullGridPrice}>{formatCurrency(product.price)}</Text>
+                              {product.originalPrice ? (
+                                <Text style={styles.fullGridOriginalPrice}>
+                                  {formatCurrency(product.originalPrice)}
+                                </Text>
+                              ) : null}
+                            </View>
+                            <TouchableOpacity style={styles.fullGridAddButton}>
+                              <Text style={styles.fullGridAddText}>Add</Text>
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      </View>
+                    ))
+                  ) : (
+                    <View style={styles.emptyStateContainer}>
+                      <Text style={styles.emptyStateText}>No items found for this category.</Text>
                     </View>
-                  </View>
-                </View>
-              ))}
-              {filteredProducts.length === 0 && (
-                <View style={styles.emptyStateContainer}>
-                  <Text style={styles.emptyStateText}>No items found for this category.</Text>
-                </View>
-              )}
-            </ScrollView>
+                  )}
+                </ScrollView>
+              </>
+            )}
           </SafeAreaView>
         </View>
       </Modal>
@@ -630,6 +553,27 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#666",
   },
+  errorAlert: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginHorizontal: 16,
+    marginBottom: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: "#FFECEF",
+    borderWidth: 1,
+    borderColor: "#FFD0D5",
+  },
+  errorIcon: {
+    marginRight: 8,
+  },
+  errorText: {
+    flex: 1,
+    fontSize: 13,
+    color: "#C62828",
+    fontWeight: "600",
+  },
   scrollView: {
     flex: 1,
   },
@@ -660,6 +604,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingRight: 8,
   },
+  categoryLoadingContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 20,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   categoryCard: {
     alignItems: "center",
     marginRight: 16,
@@ -681,6 +631,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#333",
     textAlign: "center",
+    fontWeight: "500",
+  },
+  inlineEmptyText: {
+    paddingHorizontal: 16,
+    fontSize: 13,
+    color: "#666",
     fontWeight: "500",
   },
   productsContainer: {
@@ -746,6 +702,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#999",
     textDecorationLine: "line-through",
+  },
+  horizontalLoader: {
+    paddingHorizontal: 16,
+    paddingVertical: 24,
+    justifyContent: "center",
+    alignItems: "center",
   },
   addButton: {
     backgroundColor: "#00A859",
@@ -920,6 +882,12 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: "#333",
   },
+  fullGridOriginalPrice: {
+    fontSize: 12,
+    color: "#999",
+    textDecorationLine: "line-through",
+    marginTop: 4,
+  },
   fullGridAddButton: {
     backgroundColor: "#00A859",
     borderRadius: 22,
@@ -930,6 +898,11 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 14,
     fontWeight: "700",
+  },
+  modalLoadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
   emptyStateContainer: {
     paddingVertical: 40,

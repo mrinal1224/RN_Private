@@ -189,3 +189,23 @@ export const authAPI = {
   },
 };
 
+export const productsAPI = {
+  getAll: async () => {
+    try {
+      const response = await apiClient.get('/products');
+      return response.data;
+    } catch (error: any) {
+      throw error;
+    }
+  },
+
+  getByCategory: async (categoryId: string) => {
+    try {
+      const response = await apiClient.get(`/products/category/${categoryId}`);
+      return response.data;
+    } catch (error: any) {
+      throw error;
+    }
+  },
+};
+
