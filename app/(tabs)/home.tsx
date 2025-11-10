@@ -1,3 +1,4 @@
+import React, { useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -6,6 +7,7 @@ import {
   StyleSheet,
   TextInput,
   Dimensions,
+  Modal,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { FontAwesome, MaterialIcons } from "@expo/vector-icons";
@@ -22,6 +24,185 @@ const categories = [
   { id: 6, name: "Meat", icon: "cutlery" },
   { id: 7, name: "Bakery", icon: "birthday-cake" },
   { id: 8, name: "Frozen", icon: "snowflake-o" },
+];
+
+const categoryProducts = [
+  // Fruits
+  {
+    id: "fruits-1",
+    categoryId: 1,
+    name: "Fresh Bananas",
+    price: "₹49",
+    image: "🍌",
+  },
+  {
+    id: "fruits-2",
+    categoryId: 1,
+    name: "Seasonal Mangoes",
+    price: "₹149",
+    image: "🥭",
+  },
+  {
+    id: "fruits-3",
+    categoryId: 1,
+    name: "Green Apples",
+    price: "₹199",
+    image: "🍏",
+  },
+  // Vegetables
+  {
+    id: "veg-1",
+    categoryId: 2,
+    name: "Organic Tomatoes",
+    price: "₹39",
+    image: "🍅",
+  },
+  {
+    id: "veg-2",
+    categoryId: 2,
+    name: "Carrots 500g",
+    price: "₹29",
+    image: "🥕",
+  },
+  {
+    id: "veg-3",
+    categoryId: 2,
+    name: "Spinach Bunch",
+    price: "₹25",
+    image: "🥬",
+  },
+  // Dairy
+  {
+    id: "dairy-1",
+    categoryId: 3,
+    name: "Fresh Milk 1L",
+    price: "₹58",
+    image: "🥛",
+  },
+  {
+    id: "dairy-2",
+    categoryId: 3,
+    name: "Greek Yogurt",
+    price: "₹89",
+    image: "🍶",
+  },
+  {
+    id: "dairy-3",
+    categoryId: 3,
+    name: "Salted Butter",
+    price: "₹120",
+    image: "🧈",
+  },
+  // Beverages
+  {
+    id: "bev-1",
+    categoryId: 4,
+    name: "Cold Coffee",
+    price: "₹79",
+    image: "🥤",
+  },
+  {
+    id: "bev-2",
+    categoryId: 4,
+    name: "Fresh Lemonade",
+    price: "₹59",
+    image: "🍋",
+  },
+  {
+    id: "bev-3",
+    categoryId: 4,
+    name: "Coconut Water",
+    price: "₹45",
+    image: "🥥",
+  },
+  // Snacks
+  {
+    id: "snacks-1",
+    categoryId: 5,
+    name: "Masala Chips",
+    price: "₹30",
+    image: "🍟",
+  },
+  {
+    id: "snacks-2",
+    categoryId: 5,
+    name: "Salted Peanuts",
+    price: "₹60",
+    image: "🥜",
+  },
+  {
+    id: "snacks-3",
+    categoryId: 5,
+    name: "Dark Chocolate",
+    price: "₹110",
+    image: "🍫",
+  },
+  // Meat
+  {
+    id: "meat-1",
+    categoryId: 6,
+    name: "Chicken Breast 500g",
+    price: "₹210",
+    image: "🍗",
+  },
+  {
+    id: "meat-2",
+    categoryId: 6,
+    name: "Fresh Salmon",
+    price: "₹450",
+    image: "🐟",
+  },
+  {
+    id: "meat-3",
+    categoryId: 6,
+    name: "Mutton Curry Cut",
+    price: "₹520",
+    image: "🥩",
+  },
+  // Bakery
+  {
+    id: "bakery-1",
+    categoryId: 7,
+    name: "Whole Wheat Bread",
+    price: "₹45",
+    image: "🍞",
+  },
+  {
+    id: "bakery-2",
+    categoryId: 7,
+    name: "Blueberry Muffins",
+    price: "₹150",
+    image: "🧁",
+  },
+  {
+    id: "bakery-3",
+    categoryId: 7,
+    name: "Garlic Breadsticks",
+    price: "₹95",
+    image: "🥖",
+  },
+  // Frozen
+  {
+    id: "frozen-1",
+    categoryId: 8,
+    name: "Frozen Peas 500g",
+    price: "₹80",
+    image: "🟢",
+  },
+  {
+    id: "frozen-2",
+    categoryId: 8,
+    name: "Ice Cream Tub",
+    price: "₹199",
+    image: "🍨",
+  },
+  {
+    id: "frozen-3",
+    categoryId: 8,
+    name: "Veggie Nuggets",
+    price: "₹150",
+    image: "🍢",
+  },
 ];
 
 const featuredProducts = [
@@ -87,8 +268,24 @@ const bestSellers = [
 ];
 
 export default function HomeScreen() {
+  const [selectedCategoryId, setSelectedCategoryId] = useState(categories[0]?.id ?? null);
+  const [isSidebarVisible, setSidebarVisible] = useState(false);
+
+  const filteredProducts = useMemo(() => {
+    if (!selectedCategoryId) {
+      return categoryProducts;
+    }
+    return categoryProducts.filter((product) => product.categoryId === selectedCategoryId);
+  }, [selectedCategoryId]);
+
+  const handleCategoryPress = (categoryId: number) => {
+    setSelectedCategoryId(categoryId);
+    setSidebarVisible(true);
+  };
+
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
+    <>
+      <SafeAreaView style={styles.container} edges={["top"]}>
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.locationContainer}>
@@ -142,7 +339,14 @@ export default function HomeScreen() {
             contentContainerStyle={styles.categoriesContainer}
           >
             {categories.map((category) => (
-              <TouchableOpacity key={category.id} style={styles.categoryCard}>
+              <TouchableOpacity
+                key={category.id}
+                style={[
+                  styles.categoryCard,
+                  selectedCategoryId === category.id && styles.categoryCardActive,
+                ]}
+                onPress={() => handleCategoryPress(category.id)}
+              >
                 <View style={styles.categoryIcon}>
                   <FontAwesome name={category.icon as any} size={24} color="#00A859" />
                 </View>
@@ -258,7 +462,73 @@ export default function HomeScreen() {
           </ScrollView>
         </View>
       </ScrollView>
-    </SafeAreaView>
+      </SafeAreaView>
+
+      <Modal visible={isSidebarVisible} animationType="slide" transparent>
+        <View style={styles.fullscreenOverlay}>
+          <SafeAreaView style={styles.fullscreenContainer}>
+            <View style={styles.fullscreenHeader}>
+              <Text style={styles.fullscreenTitle}>Browse Categories</Text>
+              <TouchableOpacity style={styles.fullscreenCloseButton} onPress={() => setSidebarVisible(false)}>
+                <FontAwesome name="close" size={22} color="#333" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.chipsContainer}
+            >
+              {categories.map((category) => {
+                const isActive = selectedCategoryId === category.id;
+                return (
+                  <TouchableOpacity
+                    key={`chip-${category.id}`}
+                    onPress={() => setSelectedCategoryId(category.id)}
+                    style={[styles.categoryChip, isActive && styles.categoryChipActive]}
+                  >
+                    <View style={[styles.categoryChipIcon, isActive && styles.categoryChipIconActive]}>
+                      <FontAwesome
+                        name={category.icon as any}
+                        size={18}
+                        color={isActive ? "#FFFFFF" : "#00A859"}
+                      />
+                    </View>
+                    <Text style={[styles.categoryChipText, isActive && styles.categoryChipTextActive]}>
+                      {category.name}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+
+            <ScrollView contentContainerStyle={styles.fullGridContainer} showsVerticalScrollIndicator={false}>
+              {filteredProducts.map((product) => (
+                <View key={product.id} style={styles.fullGridCard}>
+                  <View style={styles.fullGridImageContainer}>
+                    <Text style={styles.fullGridEmoji}>{product.image}</Text>
+                  </View>
+                  <View style={styles.fullGridInfo}>
+                    <Text style={styles.fullGridName} numberOfLines={2}>{product.name}</Text>
+                    <View style={styles.fullGridFooter}>
+                      <Text style={styles.fullGridPrice}>{product.price}</Text>
+                      <TouchableOpacity style={styles.fullGridAddButton}>
+                        <Text style={styles.fullGridAddText}>Add</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </View>
+              ))}
+              {filteredProducts.length === 0 && (
+                <View style={styles.emptyStateContainer}>
+                  <Text style={styles.emptyStateText}>No items found for this category.</Text>
+                </View>
+              )}
+            </ScrollView>
+          </SafeAreaView>
+        </View>
+      </Modal>
+    </>
   );
 }
 
@@ -394,6 +664,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginRight: 16,
     width: 70,
+  },
+  categoryCardActive: {
+    opacity: 0.8,
   },
   categoryIcon: {
     width: 60,
@@ -535,6 +808,136 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     justifyContent: "center",
     alignItems: "center",
+  },
+  fullscreenOverlay: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+  },
+  fullscreenContainer: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+  },
+  fullscreenHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F0F0F0",
+  },
+  fullscreenTitle: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: "#333",
+  },
+  fullscreenCloseButton: {
+    padding: 8,
+    borderRadius: 10,
+    backgroundColor: "#F5F5F5",
+  },
+  chipsContainer: {
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+  },
+  categoryChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F5F5F5",
+    borderRadius: 20,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    marginRight: 10,
+  },
+  categoryChipActive: {
+    backgroundColor: "#E8F5E9",
+    borderWidth: 1,
+    borderColor: "#00A859",
+  },
+  categoryChipIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#E8F5E9",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 8,
+  },
+  categoryChipIconActive: {
+    backgroundColor: "#00A859",
+  },
+  categoryChipText: {
+    fontSize: 14,
+    color: "#333",
+    fontWeight: "700",
+  },
+  categoryChipTextActive: {
+    color: "#00A859",
+  },
+  fullGridContainer: {
+    paddingHorizontal: 16,
+    paddingBottom: 24,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+  },
+  fullGridCard: {
+    width: (width - 48) / 2,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#F0F0F0",
+    marginBottom: 16,
+    overflow: "hidden",
+  },
+  fullGridImageContainer: {
+    width: "100%",
+    height: 160,
+    backgroundColor: "#FAFAFA",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  fullGridEmoji: {
+    fontSize: 80,
+  },
+  fullGridInfo: {
+    padding: 12,
+  },
+  fullGridName: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#333",
+    minHeight: 40,
+    marginBottom: 10,
+  },
+  fullGridFooter: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  fullGridPrice: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: "#333",
+  },
+  fullGridAddButton: {
+    backgroundColor: "#00A859",
+    borderRadius: 22,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+  },
+  fullGridAddText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  emptyStateContainer: {
+    paddingVertical: 40,
+    alignItems: "center",
+  },
+  emptyStateText: {
+    fontSize: 14,
+    color: "#666",
   },
 });
 
