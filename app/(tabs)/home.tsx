@@ -12,27 +12,22 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { FontAwesome, MaterialIcons } from "@expo/vector-icons";
-import { productsAPI } from "../utils/api";
+import { useAppDispatch, useAppSelector } from "../state/hooks";
+import {
+  fetchProducts,
+  selectAllProducts,
+  selectBestSellers,
+  selectCategories,
+  selectDailyEssentials,
+  selectFeaturedProducts,
+  selectProductsError,
+  selectProductsStatus,
+  type Category,
+  type Product,
+} from "../state/slices/productsSlice";
+import { addToCart, selectCartTotalQuantity } from "../state/slices/cartSlice";
 
 const { width } = Dimensions.get("window");
-
-type Category = {
-  id: string;
-  name: string;
-  icon: string;
-};
-
-type Product = {
-  id: string;
-  name: string;
-  description?: string;
-  price: number;
-  originalPrice?: number;
-  discountLabel?: string;
-  image?: string;
-  categoryId: string;
-  tags?: string[];
-};
 
 const formatCurrency = (value?: number) => {
   if (typeof value !== "number" || Number.isNaN(value)) {
@@ -49,67 +44,62 @@ const getProductEmoji = (image?: string) => {
 };
 
 export default function HomeScreen() {
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [allProducts, setAllProducts] = useState<Product[]>([]);
-  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
-  const [bestSellers, setBestSellers] = useState<Product[]>([]);
+  const dispatch = useAppDispatch();
+
+  const status = useAppSelector(selectProductsStatus);
+  const error = useAppSelector(selectProductsError);
+  const categories = useAppSelector(selectCategories);
+  const allProducts = useAppSelector(selectAllProducts);
+  const featuredFromState = useAppSelector(selectFeaturedProducts);
+  const bestSellersFromState = useAppSelector(selectBestSellers);
+  const dailyEssentialsFromState = useAppSelector(selectDailyEssentials);
+  const cartQuantity = useAppSelector(selectCartTotalQuantity);
+
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [isSidebarVisible, setSidebarVisible] = useState(false);
-  const [loadingProducts, setLoadingProducts] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+
+  const loadingProducts = status === "loading";
+
+  const featuredProducts = useMemo(() => {
+    if (featuredFromState.length > 0) {
+      return featuredFromState;
+    }
+    return allProducts.slice(0, Math.min(8, allProducts.length));
+  }, [featuredFromState, allProducts]);
+
+  const bestSellers = useMemo(() => {
+    if (bestSellersFromState.length > 0) {
+      return bestSellersFromState;
+    }
+    return allProducts.slice(0, Math.min(8, allProducts.length));
+  }, [bestSellersFromState, allProducts]);
+
+  const dailyEssentials = useMemo(() => {
+    if (dailyEssentialsFromState.length > 0) {
+      return dailyEssentialsFromState;
+    }
+    return allProducts.slice(0, Math.min(10, allProducts.length));
+  }, [dailyEssentialsFromState, allProducts]);
 
   useEffect(() => {
-    let isMounted = true;
+    if (status === "idle") {
+      dispatch(fetchProducts());
+    }
+  }, [status, dispatch]);
 
-    const loadProducts = async () => {
-      try {
-        setLoadingProducts(true);
-        setError(null);
+  useEffect(() => {
+    if (!categories || categories.length === 0) {
+      setSelectedCategoryId(null);
+      return;
+    }
 
-        const response = await productsAPI.getAll();
-
-        if (!response?.success) {
-          throw new Error("Unable to load products right now.");
-        }
-
-        const data = response.data ?? {};
-        const categoriesData: Category[] = data.categories ?? [];
-        const productsData: Product[] = data.products ?? [];
-        const featuredData: Product[] = data.featured ?? [];
-        const bestSellerData: Product[] = data.bestSellers ?? [];
-
-        if (!isMounted) return;
-
-        setCategories(categoriesData);
-        setAllProducts(productsData);
-        setFeaturedProducts(
-          featuredData.length > 0 ? featuredData : productsData.slice(0, Math.min(8, productsData.length))
-        );
-        setBestSellers(
-          bestSellerData.length > 0 ? bestSellerData : productsData.slice(0, Math.min(8, productsData.length))
-        );
-
-        if (categoriesData.length > 0) {
-          setSelectedCategoryId(categoriesData[0].id);
-        } else {
-          setSelectedCategoryId(null);
-        }
-      } catch (err: any) {
-        if (!isMounted) return;
-        setError(err?.message ?? "Unable to load products right now.");
-      } finally {
-        if (isMounted) {
-          setLoadingProducts(false);
-        }
+    setSelectedCategoryId((prev) => {
+      if (prev && categories.some((category) => category.id === prev)) {
+        return prev;
       }
-    };
-
-    loadProducts();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+      return categories[0].id;
+    });
+  }, [categories]);
 
   const filteredProducts = useMemo(() => {
     if (!selectedCategoryId) {
@@ -118,13 +108,6 @@ export default function HomeScreen() {
     return allProducts.filter((product) => product.categoryId === selectedCategoryId);
   }, [allProducts, selectedCategoryId]);
 
-  const dailyEssentials = useMemo(() => {
-    if (allProducts.length === 0) {
-      return [];
-    }
-    return allProducts.slice(0, Math.min(10, allProducts.length));
-  }, [allProducts]);
-
   const handleCategoryPress = (categoryId: string) => {
     setSelectedCategoryId(categoryId);
     setSidebarVisible(true);
@@ -132,6 +115,10 @@ export default function HomeScreen() {
 
   const handleChipPress = (categoryId: string) => {
     setSelectedCategoryId(categoryId);
+  };
+
+  const handleAddToCart = (product: Product) => {
+    dispatch(addToCart(product));
   };
 
   return (
@@ -150,7 +137,7 @@ export default function HomeScreen() {
           <TouchableOpacity style={styles.cartButton}>
             <FontAwesome name="shopping-cart" size={22} color="#333" />
             <View style={styles.cartBadge}>
-              <Text style={styles.cartBadgeText}>0</Text>
+              <Text style={styles.cartBadgeText}>{cartQuantity}</Text>
             </View>
           </TouchableOpacity>
         </View>
@@ -262,7 +249,7 @@ export default function HomeScreen() {
                           <Text style={styles.originalPrice}>{formatCurrency(product.originalPrice)}</Text>
                         ) : null}
                       </View>
-                      <TouchableOpacity style={styles.addButton}>
+                      <TouchableOpacity style={styles.addButton} onPress={() => handleAddToCart(product)}>
                         <Text style={styles.addButtonText}>Add</Text>
                       </TouchableOpacity>
                     </View>
@@ -299,7 +286,7 @@ export default function HomeScreen() {
                       </Text>
                       <View style={styles.gridPriceContainer}>
                         <Text style={styles.gridProductPrice}>{formatCurrency(product.price)}</Text>
-                        <TouchableOpacity style={styles.gridAddButton}>
+                        <TouchableOpacity style={styles.gridAddButton} onPress={() => handleAddToCart(product)}>
                           <FontAwesome name="plus" size={14} color="#fff" />
                         </TouchableOpacity>
                       </View>
@@ -350,7 +337,7 @@ export default function HomeScreen() {
                           <Text style={styles.originalPrice}>{formatCurrency(product.originalPrice)}</Text>
                         ) : null}
                       </View>
-                      <TouchableOpacity style={styles.addButton}>
+                      <TouchableOpacity style={styles.addButton} onPress={() => handleAddToCart(product)}>
                         <Text style={styles.addButtonText}>Add</Text>
                       </TouchableOpacity>
                     </View>
@@ -370,6 +357,9 @@ export default function HomeScreen() {
               <TouchableOpacity
                 style={styles.fullscreenCloseButton}
                 onPress={() => setSidebarVisible(false)}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                accessibilityRole="button"
+                accessibilityLabel="Close categories"
               >
                 <FontAwesome name="close" size={22} color="#333" />
               </TouchableOpacity>
@@ -433,7 +423,10 @@ export default function HomeScreen() {
                                 </Text>
                               ) : null}
                             </View>
-                            <TouchableOpacity style={styles.fullGridAddButton}>
+                            <TouchableOpacity
+                              style={styles.fullGridAddButton}
+                              onPress={() => handleAddToCart(product)}
+                            >
                               <Text style={styles.fullGridAddText}>Add</Text>
                             </TouchableOpacity>
                           </View>
@@ -787,6 +780,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderBottomWidth: 1,
     borderBottomColor: "#F0F0F0",
+    zIndex: 2,
   },
   fullscreenTitle: {
     fontSize: 22,
@@ -794,9 +788,12 @@ const styles = StyleSheet.create({
     color: "#333",
   },
   fullscreenCloseButton: {
-    padding: 8,
-    borderRadius: 10,
+    width: 44,
+    height: 44,
+    borderRadius: 12,
     backgroundColor: "#F5F5F5",
+    justifyContent: "center",
+    alignItems: "center",
   },
   chipsContainer: {
     paddingHorizontal: 12,
